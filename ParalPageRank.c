@@ -1,6 +1,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+struct page_link{
+    unsigned int page_id;
+    struct page_link* next;
+};
+
+struct page{
+    double rank;
+    struct page_link* links; //list of links to other pages.
+};
+
+struct pages{ //singleton struct to hold all nodes (pages) of the graph
+    struct page* array;
+    unsigned int array_size;
+    unsigned int pages_count;
+};
 
 int main(int argc, const char* argv[]){
 
