@@ -86,10 +86,10 @@ void graph_print(){
     for(int64 idx = 0; idx < pages.array_size; idx++){
         if(!pages.array[idx].is_used)
             continue;
-        printf("%d:\t", idx);
+        printf("%lld:\t", idx);
         struct page_link* ptr = pages.array[idx].links;
         while(ptr){
-            printf("%d\t", ptr->page_id);
+            printf("%lld\t", ptr->page_id);
             ptr = ptr->next;
         }
         printf("\n");
@@ -101,7 +101,7 @@ void graph_print_ranks(){
     for(int64 idx = 0; idx < pages.array_size; idx++){
         if(!pages.array[idx].is_used)
             continue;
-        printf("%d:\t%f\n", idx, pages.array[idx].rank);
+        printf("%lld:\t%f\n", idx, pages.array[idx].rank);
     }
 }
 
@@ -133,11 +133,11 @@ int main(int argc, const char* argv[]){
     char* str = NULL;
 
     graph_init();
-    
+
     while(getline(&str, &size, stdin) != -1){ // currently using stdin
         if(str[0] == '#') // skip comments.
             continue;
-        sscanf(str, "%ld\t%ld", &page_id, &page_link);
+        sscanf(str, "%lld %lld", &page_id, &page_link);
         graph_add_page_link(page_id, page_link);
     }
 
