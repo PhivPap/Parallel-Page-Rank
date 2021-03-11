@@ -44,7 +44,18 @@ void graph_init(void){
 }
 
 void graph_free(void){
-    // TODO
+    for(int64 idx = 0; idx < pages.array_size; idx++){
+        if(!pages.array[idx].is_used)
+            continue;
+        struct page_link* ptr = pages.array[idx].links;
+        struct page_link* prev_ptr;
+        while(ptr){
+            prev_ptr = ptr;
+            ptr = ptr->next;
+            free(prev_ptr);
+        }
+    }
+    free(pages.array);
 }
 
 void graph_double_nodes(void){
@@ -101,7 +112,7 @@ void graph_print_ranks(){
     for(int64 idx = 0; idx < pages.array_size; idx++){
         if(!pages.array[idx].is_used)
             continue;
-        printf("%lld:\t%f\n", idx, pages.array[idx].rank);
+        printf("%lld,%f\n", idx, pages.array[idx].rank);
     }
 }
 
@@ -127,13 +138,27 @@ void page_rank_single_thread(){
     }
 }
 
+/* 
+    argv[1] = <count of threads> 
+*/
 int main(int argc, const char* argv[]){
+
+    int thread_count = 1;
     int64 page_id, page_link;
-    size_t size; // unused
+    size_t size;
     char* str = NULL;
 
-    graph_init();
+    if(argc > 1){
+        thread_count = atoi(argv[1]);
+        if(thread_count <= 0 || thread_count > 4){
+            printf("Set valid thread-count.\n");
+            return 1;
+        }
+    }
 
+    graph_init();
+    
+    // graph parsing -------------------------------------------------------
     while(getline(&str, &size, stdin) != -1){ // currently using stdin
         if(str[0] == '#') // skip comments.
             continue;
@@ -141,11 +166,19 @@ int main(int argc, const char* argv[]){
         graph_add_page_link(page_id, page_link);
     }
 
+    // thread generating ---------------------------------------------------
+
+    
+    
+    
     for(int counter = 0; counter < 2; counter++)
         page_rank_single_thread();
 
-    //graph_print();
+    // results print -------------------------------------------------------
     graph_print_ranks();
+
+
+    // free ----------------------------------------------------------------
     if(!str)
         free(str);
     graph_free();
