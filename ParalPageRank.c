@@ -13,8 +13,8 @@ struct Page_link{
 };
 
 struct Page{
-    bool is_used;
     double rank;
+    double rank_change;
     struct Page_link* links; // list of links to other pages.
     int links_count;
 };
@@ -22,7 +22,6 @@ struct Page{
 struct Graph{ // singleton struct to hold all nodes (pages) of the graph
     struct Page* array;
     size_t array_size;
-    int64 pages_count;
     int64 last_page_idx;
 };
 
@@ -39,13 +38,12 @@ struct Graph pages;
 
 void graph_init(void){
     pages.last_page_idx = -1;
-    pages.pages_count = 0;
     pages.array_size = INIT_GRAPH_NODES;
     pages.array = malloc(INIT_GRAPH_NODES * sizeof(struct Page));
     for(int64 idx = 0; idx < pages.array_size; idx++){
         pages.array[idx].links = NULL;
-        pages.array[idx].is_used = false;
         pages.array[idx].rank = 1;
+        pages.array[idx].rank_change = 0;
         pages.array[idx].links_count = 0;
 
     }
@@ -53,8 +51,6 @@ void graph_init(void){
 
 void graph_free(void){
     for(int64 idx = 0; idx < pages.array_size; idx++){
-        if(!pages.array[idx].is_used)
-            continue;
         struct Page_link* ptr = pages.array[idx].links;
         struct Page_link* prev_ptr;
         while(ptr){
@@ -77,8 +73,8 @@ void graph_double_nodes(void){
    
     for(int64 idx = prev_array_size; idx < pages.array_size; idx++){
         pages.array[idx].links = NULL;
-        pages.array[idx].is_used = false;
         pages.array[idx].rank = 1;
+        pages.array[idx].rank_change = 0;
         pages.array[idx].links_count = 0;
     }
 }
@@ -94,11 +90,6 @@ void graph_add_page_link(int64 page_id, int64 page_link){
         graph_double_nodes();
     }
 
-    if(pages.array[page_id].is_used == false){
-        pages.array[page_id].is_used = true;
-        pages.pages_count++;
-    }
-
     struct Page_link* new_page_link = malloc(sizeof(struct Page_link));
     new_page_link->page_id = page_link;
     new_page_link->next = pages.array[page_id].links;
@@ -109,8 +100,6 @@ void graph_add_page_link(int64 page_id, int64 page_link){
 /* For debugging reasons */
 void graph_print(){
     for(int64 idx = 0; idx < pages.array_size; idx++){
-        if(!pages.array[idx].is_used)
-            continue;
         printf("%lld:\t", idx);
         struct Page_link* ptr = pages.array[idx].links;
         while(ptr){
@@ -129,10 +118,9 @@ void graph_print_ranks(){
 }
 
 void page_rank_single_thread(){
-    int64 pages_visited = 0;
     int64 idx = 0;
-    while(pages_visited < pages.pages_count){
-        if(!pages.array[idx].is_used){
+    while(idx < pages.last_page_idx){
+        if(!pages.array[idx].links){
             idx++;
             continue;
         }
@@ -140,12 +128,24 @@ void page_rank_single_thread(){
         // increases rank of all neighboring pages. 
         // (pages that the particular page has links to)
         double normalized_rank = pages.array[idx].rank / (double)pages.array[idx].links_count;
+        double rank_segment = 0.85 * normalized_rank;
+        pages.array[idx].rank *= 0.15;
+
         while(ptr){ 
-            pages.array[ptr->page_id].rank += 0.85 * normalized_rank;
+            pages.array[ptr->page_id].rank_change += rank_segment;
             ptr = ptr->next;
         }  
 
-        pages_visited++;
+        idx++;
+    }
+
+    idx = 0;
+    while(idx < pages.last_page_idx){
+        // printf("%f\n", pages.array[idx].rank);
+        // printf("%f\n", pages.array[idx].rank_change);
+        pages.array[idx].rank += pages.array[idx].rank_change;
+        // printf("%f\n", pages.array[idx].rank);
+        pages.array[idx].rank_change = 0;
         idx++;
     }
 }
@@ -186,28 +186,28 @@ int main(int argc, const char* argv[]){
         graph_add_page_link(page_id, page_link);
     }
 
-    // thread generating ---------------------------------------------------
-    int64 pages_per_thread = pages.pages_count / thread_count;
-    int64 page_idx = 0;
-    for(int i = 0; i < thread_count - 1; i++){
-        struct thread_arg* thread_info = malloc(sizeof(struct thread_arg));
-        thread_info->start_idx = page_idx;
-        thread_info->revolutions = REVOLUTIONS;
-        int64 thread_page_count = 0;
-        while(thread_page_count < pages_per_thread){
-            if(pages.array[page_idx].is_used)
-                thread_page_count++;
-            page_idx++;
-        }
-        thread_info->end_idx = page_idx - 1;
-        // create thread here with arg.
-    }
+    // // thread generating ---------------------------------------------------
+    // int64 pages_per_thread = pages.pages_count / thread_count;
+    // int64 page_idx = 0;
+    // for(int i = 0; i < thread_count - 1; i++){
+    //     struct thread_arg* thread_info = malloc(sizeof(struct thread_arg));
+    //     thread_info->start_idx = page_idx;
+    //     thread_info->revolutions = REVOLUTIONS;
+    //     int64 thread_page_count = 0;
+    //     while(thread_page_count < pages_per_thread){
+    //         if(pages.array[page_idx].is_used)
+    //             thread_page_count++;
+    //         page_idx++;
+    //     }
+    //     thread_info->end_idx = page_idx - 1;
+    //     // create thread here with arg.
+    // }
     
-    struct thread_arg* thread_info = malloc(sizeof(struct thread_arg));
-    thread_info->start_idx = page_idx;
-    thread_info->revolutions = REVOLUTIONS;
-    thread_info->end_idx = pages.last_page_idx;
-    // create thread here with arg.
+    // struct thread_arg* thread_info = malloc(sizeof(struct thread_arg));
+    // thread_info->start_idx = page_idx;
+    // thread_info->revolutions = REVOLUTIONS;
+    // thread_info->end_idx = pages.last_page_idx;
+    // // create thread here with arg.
     
     for(int counter = 0; counter < REVOLUTIONS; counter++)
         page_rank_single_thread();
