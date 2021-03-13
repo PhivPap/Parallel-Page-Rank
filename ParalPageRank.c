@@ -112,14 +112,14 @@ void graph_print(){
 
 void graph_print_ranks(){
     printf("node,pagerank\n");
-    for(int64 idx = 0; idx < pages.last_page_idx; idx++){
-        printf("%lld,%f\n", idx, pages.array[idx].rank);
+    for(int64 idx = 0; idx <= pages.last_page_idx; idx++){
+        printf("%lld,%.3f\n", idx, pages.array[idx].rank);
     }
 }
 
 void page_rank_single_thread(){
     int64 idx = 0;
-    while(idx < pages.last_page_idx){
+    while(idx <= pages.last_page_idx){
         if(!pages.array[idx].links){
             idx++;
             continue;
@@ -140,11 +140,8 @@ void page_rank_single_thread(){
     }
 
     idx = 0;
-    while(idx < pages.last_page_idx){
-        // printf("%f\n", pages.array[idx].rank);
-        // printf("%f\n", pages.array[idx].rank_change);
+    while(idx <= pages.last_page_idx){
         pages.array[idx].rank += pages.array[idx].rank_change;
-        // printf("%f\n", pages.array[idx].rank);
         pages.array[idx].rank_change = 0;
         idx++;
     }
