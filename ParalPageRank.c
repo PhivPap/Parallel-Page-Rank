@@ -154,7 +154,7 @@ void graph_print(){
 }
 
 void graph_print_ranks(){
-    printf("#node,pagerank\n");
+    printf("node,pagerank\n");
     for(int64 idx = 0; idx <= pages.last_page_idx; idx++){
         printf("%lld,%.3f\n", pages.array[idx].id, pages.array[idx].rank);
     }
